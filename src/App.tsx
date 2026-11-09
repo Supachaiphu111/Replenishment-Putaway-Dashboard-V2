@@ -1,6 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { RP20Record, FilterState, DashboardSettings, HourlyStat, UserMatrixRow, ShiftFilter } from './types';
-import { generateSampleRP20Data, isMorningShift, isNightShift } from './utils/sampleData';
+import {
+  generateSampleRP20Data,
+  isMorningShift,
+  isNightShift,
+  isCherryPickTask,
+  isDuplicateAuditLabel,
+  isWrongTypeLabel,
+} from './utils/sampleData';
+import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { FilterBar } from './components/FilterBar';
 import { KPICards } from './components/KPICards';
@@ -39,6 +47,57 @@ export default function App() {
   // Master RP20 Records
   const [records, setRecords] = useState<RP20Record[]>(() => generateSampleRP20Data());
   const [fileName, setFileName] = useState<string | undefined>(undefined);
+
+  // Sidebar navigation state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('section-kpi');
+
+  // Smooth scroll handler for sidebar items
+  const handleSelectSection = (sectionId: string) => {
+    setActiveSection(sectionId);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const headerOffset = 76;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // Scroll spy to highlight active menu section as user scrolls
+  useEffect(() => {
+    const sectionIds = [
+      'section-filters',
+      'section-kpi',
+      'section-hourly',
+      'section-cumulative',
+      'section-daily-monthly',
+      'section-cherry',
+      'section-ilpn-audit',
+      'section-top-users',
+      'section-distribution',
+      'section-matrix',
+      'section-raw-data',
+    ];
+
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 120;
+      for (let i = sectionIds.length - 1; i >= 0; i--) {
+        const el = document.getElementById(sectionIds[i]);
+        if (el && el.offsetTop <= scrollPos) {
+          setActiveSection(sectionIds[i]);
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Modals state
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -190,6 +249,34 @@ export default function App() {
   // Active Users count
   const activeUsersCount = useMemo(() => {
     return new Set(filteredRecords.map((r) => r.byUser)).size;
+  }, [filteredRecords]);
+
+  // Cherry Pick Child labels (2115*) for sidebar live badge
+  const totalCherryChildCount = useMemo(() => {
+    return records.filter((r) => {
+      if (filters.selectedDate !== 'ALL' && r.date !== filters.selectedDate) return false;
+      if (filters.taskStatus !== 'ALL' && r.taskStatus.toLowerCase() !== filters.taskStatus.toLowerCase()) return false;
+      if (shiftFilter === 'MORNING' && !isMorningShift(r.completionHour)) return false;
+      if (shiftFilter === 'NIGHT' && !isNightShift(r.completionHour)) return false;
+      return isCherryPickTask(r.taskDescription) && r.ilpn && r.ilpn.startsWith('2115');
+    }).length;
+  }, [records, filters.selectedDate, filters.taskStatus, shiftFilter]);
+
+  // Duplicate iLPN count for sidebar live badge (only 2115*, excluding 125*)
+  const duplicateCountForSidebar = useMemo(() => {
+    const userIlpnCounts: Record<string, number> = {};
+    filteredRecords.forEach((r) => {
+      if (isDuplicateAuditLabel(r.ilpn)) {
+        const key = `${r.byUser}||${r.ilpn}`;
+        userIlpnCounts[key] = (userIlpnCounts[key] || 0) + 1;
+      }
+    });
+    return Object.values(userIlpnCounts).filter((cnt) => cnt > 1).length;
+  }, [filteredRecords]);
+
+  // Wrong label 2114* count for sidebar live badge
+  const wrongLabelCountForSidebar = useMemo(() => {
+    return filteredRecords.filter((r) => isWrongTypeLabel(r.ilpn)).length;
   }, [filteredRecords]);
 
   // Hourly Statistics (over activeHours)
@@ -429,192 +516,232 @@ export default function App() {
       : '';
 
   return (
-    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors relative overflow-hidden ${glassClass}`}>
+    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors relative overflow-x-hidden ${glassClass}`}>
       {/* Ambient Liquid Glow Orbs */}
-      <div className="liquid-glow w-[500px] h-[500px] -top-40 -left-40 bg-cyan-500/20" />
-      <div className="liquid-glow w-[600px] h-[600px] top-1/3 -right-48 bg-indigo-500/15" />
-      <div className="liquid-glow w-[450px] h-[450px] -bottom-32 left-1/4 bg-emerald-500/15" />
+      <div className="liquid-glow w-[520px] h-[520px] -top-32 -left-32 bg-cyan-500/25 pointer-events-none" />
+      <div className="liquid-glow w-[640px] h-[640px] top-1/4 -right-40 bg-indigo-500/20 [animation-delay:4s] pointer-events-none" />
+      <div className="liquid-glow w-[480px] h-[480px] top-2/3 -left-32 bg-purple-500/20 [animation-delay:8s] pointer-events-none" />
+      <div className="liquid-glow w-[500px] h-[500px] -bottom-24 right-1/4 bg-emerald-500/18 [animation-delay:12s] pointer-events-none" />
 
-      {/* Main Header */}
-      <Header
-        darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
+      {/* Multi-Level Sidebar Navigation */}
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggleOpen={() => setIsSidebarOpen((prev) => !prev)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        activeSection={activeSection}
+        onSelectSection={handleSelectSection}
         onOpenUpload={() => setIsUploadOpen(true)}
         onOpenCustomizer={() => setIsCustomizerOpen(true)}
-        onResetSample={handleResetSample}
-        currentRecords={records}
-        totalRecordsCount={totalLoadedCount}
-        fileName={fileName}
+        completedCount={totalCompletedCount}
+        totalCherryChild={totalCherryChildCount}
+        duplicateIlpnCount={duplicateCountForSidebar}
+        wrongLabel2114Count={wrongLabelCountForSidebar}
+        activeUsersCount={activeUsersCount}
       />
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
-        {/* Filter Controls Bar */}
-        <FilterBar
-          filters={filters}
-          onFilterChange={setFilters}
-          availableDates={availableDates}
-          availableTasks={availableTasks}
-          availableStatuses={availableStatuses}
-          availableUsers={availableUsers}
-          taskCounts={taskCountsForTabs}
-          statusCounts={statusCounts}
-          totalFilteredCount={filteredLoadedCount}
-          totalRawCount={totalLoadedCount}
-          shiftFilter={shiftFilter}
-          onSelectShift={setShiftFilter}
+      {/* Desktop Content Wrapper - shifts right to accommodate fixed sidebar */}
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72 sm:lg:pl-80'
+        }`}
+      >
+        {/* Main Header */}
+        <Header
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
+          onOpenUpload={() => setIsUploadOpen(true)}
+          onOpenCustomizer={() => setIsCustomizerOpen(true)}
+          onResetSample={handleResetSample}
+          currentRecords={records}
+          totalRecordsCount={totalLoadedCount}
+          fileName={fileName}
+          onToggleSidebar={() => {
+            if (window.innerWidth < 1024) {
+              setIsSidebarOpen((prev) => !prev);
+            } else {
+              setIsSidebarCollapsed((prev) => !prev);
+            }
+          }}
         />
 
-        {/* Selected Hour Alert / Reset filter */}
-        {selectedHour !== null && (
-          <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between text-xs text-cyan-700 dark:text-cyan-300">
-            <span>
-              กำลังเจาะลึกเฉพาะเวลา:{' '}
-              <strong className="font-mono">{String(selectedHour).padStart(2, '0')}:00 - {String(selectedHour).padStart(2, '0')}:59 น.</strong>
-            </span>
-            <button
-              onClick={() => setSelectedHour(null)}
-              className="font-semibold underline cursor-pointer hover:text-cyan-900 dark:hover:text-white"
-            >
-              แสดงครบทุกชั่วโมง
-            </button>
-          </div>
-        )}
-
-        {/* 1. KPI Cards Widget */}
-        {settings.widgets.kpiCards && (
-          <KPICards
-            completedCount={totalCompletedCount}
-            totalCount={filteredLoadedCount}
-            activeUsersCount={activeUsersCount}
-            peakHourLabel={peakHourObj.label}
-            peakHourCount={peakHourObj.count}
-            avgPerHour={avgPerHour}
-            completionRate={completionRate}
-            statusLabel={filters.taskStatus}
-          />
-        )}
-
-        {/* 2. REQUISITE: ยอดงานเสร็จรายชั่วโมง และ กราฟแท่งแสดงยอดสะสมรายชั่วโมง อยู่คนละแถว (Separate Rows) */}
-        {/* Hourly Productivity Bar Chart (Row 1) */}
-        {settings.widgets.hourlyChart && (
-          <div className="w-full">
-            <HourlyBarChart
-              hourlyStats={hourlyStats}
-              activeHours={activeHours}
-              peakHour={peakHourObj.hour}
-              selectedHour={selectedHour}
-              onSelectHour={(h) => setSelectedHour(selectedHour === h ? null : h)}
-              selectedStatus={filters.taskStatus}
-              selectedTasks={filters.taskDescriptions}
-            />
-          </div>
-        )}
-
-        {/* Hourly Cumulative Bar Chart (Row 2 - คนละแถวพร้อมตัวเลขกำกับทุกแท่ง) */}
-        {settings.widgets.cumulativeChart && (
-          <div className="w-full">
-            <HourlyCumulativeChart
-              hourlyStats={hourlyStats}
-              activeHours={activeHours}
-              selectedStatus={filters.taskStatus}
-              selectedTasks={filters.taskDescriptions}
-            />
-          </div>
-        )}
-
-        {/* 3. NEW: กราฟแท่งสรุปรายวันและรายเดือน พร้อมเส้นแนวโน้ม (Daily & Monthly Bar Chart with Trendline) */}
-        {settings.widgets.dailyMonthlyChart && (
-          <div className="w-full">
-            <DailyMonthlyChart
-              records={records}
-              selectedDate={filters.selectedDate}
-              onSelectDate={(d) => setFilters({ ...filters, selectedDate: d })}
-              selectedStatus={filters.taskStatus}
-              selectedTasks={filters.taskDescriptions}
+        {/* Main Content Area */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
+          {/* Filter Controls Bar */}
+          <div id="section-filters" className="scroll-mt-20">
+            <FilterBar
+              filters={filters}
+              onFilterChange={setFilters}
+              availableDates={availableDates}
+              availableTasks={availableTasks}
+              availableStatuses={availableStatuses}
+              availableUsers={availableUsers}
+              taskCounts={taskCountsForTabs}
+              statusCounts={statusCounts}
+              totalFilteredCount={filteredLoadedCount}
+              totalRawCount={totalLoadedCount}
               shiftFilter={shiftFilter}
+              onSelectShift={setShiftFilter}
             />
           </div>
-        )}
 
-        {/* 4. NEW: กราฟแท่งจำนวนนับ Cherry Pick (Task No. แม่ vs iLPN 2115* ลูก) */}
-        {settings.widgets.cherryPickWidget && (
-          <div className="w-full">
-            <CherryPickAnalytics
-              records={records}
-              activeHours={activeHours}
-              selectedDate={filters.selectedDate}
-              selectedStatus={filters.taskStatus}
-              selectedUser={filters.byUser}
-              shiftFilter={shiftFilter}
-            />
+          {/* Selected Hour Alert / Reset filter */}
+          {selectedHour !== null && (
+            <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-between text-xs text-cyan-700 dark:text-cyan-300">
+              <span>
+                กำลังเจาะลึกเฉพาะเวลา:{' '}
+                <strong className="font-mono">{String(selectedHour).padStart(2, '0')}:00 - {String(selectedHour).padStart(2, '0')}:59 น.</strong>
+              </span>
+              <button
+                onClick={() => setSelectedHour(null)}
+                className="font-semibold underline cursor-pointer hover:text-cyan-900 dark:hover:text-white"
+              >
+                แสดงครบทุกชั่วโมง
+              </button>
+            </div>
+          )}
+
+          {/* 1. KPI Cards Widget */}
+          {settings.widgets.kpiCards && (
+            <div id="section-kpi" className="scroll-mt-20">
+              <KPICards
+                completedCount={totalCompletedCount}
+                totalCount={filteredLoadedCount}
+                activeUsersCount={activeUsersCount}
+                peakHourLabel={peakHourObj.label}
+                peakHourCount={peakHourObj.count}
+                avgPerHour={avgPerHour}
+                completionRate={completionRate}
+                statusLabel={filters.taskStatus}
+              />
+            </div>
+          )}
+
+          {/* 2. REQUISITE: ยอดงานเสร็จรายชั่วโมง และ กราฟแท่งแสดงยอดสะสมรายชั่วโมง อยู่คนละแถว (Separate Rows) */}
+          {/* Hourly Productivity Bar Chart (Row 1) */}
+          {settings.widgets.hourlyChart && (
+            <div id="section-hourly" className="w-full scroll-mt-20">
+              <HourlyBarChart
+                hourlyStats={hourlyStats}
+                activeHours={activeHours}
+                peakHour={peakHourObj.hour}
+                selectedHour={selectedHour}
+                onSelectHour={(h) => setSelectedHour(selectedHour === h ? null : h)}
+                selectedStatus={filters.taskStatus}
+                selectedTasks={filters.taskDescriptions}
+              />
+            </div>
+          )}
+
+          {/* Hourly Cumulative Bar Chart (Row 2 - คนละแถวพร้อมตัวเลขกำกับทุกแท่ง) */}
+          {settings.widgets.cumulativeChart && (
+            <div id="section-cumulative" className="w-full scroll-mt-20">
+              <HourlyCumulativeChart
+                hourlyStats={hourlyStats}
+                activeHours={activeHours}
+                selectedStatus={filters.taskStatus}
+                selectedTasks={filters.taskDescriptions}
+              />
+            </div>
+          )}
+
+          {/* 3. สรุปรายวันและรายเดือน (Daily & Monthly Bar Chart) */}
+          {settings.widgets.dailyMonthlyChart && (
+            <div id="section-daily-monthly" className="w-full scroll-mt-20">
+              <DailyMonthlyChart
+                records={records}
+                selectedDate={filters.selectedDate}
+                onSelectDate={(d) => setFilters({ ...filters, selectedDate: d })}
+                selectedStatus={filters.taskStatus}
+                selectedTasks={filters.taskDescriptions}
+                shiftFilter={shiftFilter}
+              />
+            </div>
+          )}
+
+          {/* 4. กราฟแท่งจำนวนนับ Cherry Pick (Task No. แม่ vs iLPN 2115* ลูก) */}
+          {settings.widgets.cherryPickWidget && (
+            <div id="section-cherry" className="w-full scroll-mt-20">
+              <CherryPickAnalytics
+                records={records}
+                activeHours={activeHours}
+                selectedDate={filters.selectedDate}
+                selectedStatus={filters.taskStatus}
+                selectedUser={filters.byUser}
+                shiftFilter={shiftFilter}
+              />
+            </div>
+          )}
+
+          {/* 5. ตรวจสอบความถูกต้อง iLPN (User ที่ใช้ iLPN ลูกซ้ำ > 1 ครั้ง และ ลาเบลผิดประเภท 2114*) */}
+          {settings.widgets.ilpnAuditWidget && (
+            <div id="section-ilpn-audit" className="w-full scroll-mt-20">
+              <IlpnAuditWidget
+                records={filteredRecords}
+                onSelectUser={(u) => setFilters({ ...filters, byUser: u })}
+              />
+            </div>
+          )}
+
+          {/* 6. Top Performers & Task Distribution Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {settings.widgets.topUsers && (
+              <div id="section-top-users" className="lg:col-span-2 scroll-mt-20">
+                <TopUserRanking
+                  matrixRows={matrixRows}
+                  selectedUser={filters.byUser}
+                  onSelectUser={(u) => setFilters({ ...filters, byUser: u })}
+                  peakHourByUser={peakHourByUser}
+                />
+              </div>
+            )}
+
+            {settings.widgets.taskDistribution && (
+              <div id="section-distribution" className={`${settings.widgets.topUsers ? 'lg:col-span-1' : 'lg:col-span-3'} scroll-mt-20`}>
+                <TaskDistributionChart
+                  taskCounts={taskCounts}
+                  selectedTasks={filters.taskDescriptions || []}
+                  onToggleTask={(task) => {
+                    const current = filters.taskDescriptions || [];
+                    let updated: string[];
+                    if (current.includes(task)) {
+                      updated = current.filter((t) => t !== task);
+                    } else {
+                      updated = [...current, task];
+                    }
+                    setFilters({ ...filters, taskDescriptions: updated });
+                  }}
+                  onClearTasks={() => setFilters({ ...filters, taskDescriptions: [] })}
+                  totalCompleted={filteredLoadedCount}
+                />
+              </div>
+            )}
           </div>
-        )}
 
-        {/* 5. NEW: ตรวจสอบความถูกต้อง iLPN (User ที่ใช้ iLPN ลูกซ้ำ > 1 ครั้ง และ ลาเบลผิดประเภท 2114*) */}
-        {settings.widgets.ilpnAuditWidget && (
-          <div className="w-full">
-            <IlpnAuditWidget
-              records={filteredRecords}
-              onSelectUser={(u) => setFilters({ ...filters, byUser: u })}
-            />
-          </div>
-        )}
-
-        {/* 6. Top Performers & Task Distribution Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {settings.widgets.topUsers && (
-            <div className="lg:col-span-2">
-              <TopUserRanking
+          {/* 7. Matrix Table (พนักงาน By User × รายชั่วโมง) */}
+          {settings.widgets.matrixTable && (
+            <div id="section-matrix" className="w-full scroll-mt-20">
+              <MatrixTable
                 matrixRows={matrixRows}
+                activeHours={activeHours}
                 selectedUser={filters.byUser}
                 onSelectUser={(u) => setFilters({ ...filters, byUser: u })}
-                peakHourByUser={peakHourByUser}
-              />
-            </div>
-          )}
-
-          {settings.widgets.taskDistribution && (
-            <div className={settings.widgets.topUsers ? 'lg:col-span-1' : 'lg:col-span-3'}>
-              <TaskDistributionChart
-                taskCounts={taskCounts}
-                selectedTasks={filters.taskDescriptions || []}
-                onToggleTask={(task) => {
-                  const current = filters.taskDescriptions || [];
-                  let updated: string[];
-                  if (current.includes(task)) {
-                    updated = current.filter((t) => t !== task);
-                  } else {
-                    updated = [...current, task];
-                  }
-                  setFilters({ ...filters, taskDescriptions: updated });
+                onCellClick={(user, hour) => {
+                  setFilters({ ...filters, byUser: user });
+                  setSelectedHour(hour);
                 }}
-                onClearTasks={() => setFilters({ ...filters, taskDescriptions: [] })}
-                totalCompleted={filteredLoadedCount}
               />
             </div>
           )}
-        </div>
 
-        {/* 6. Matrix Table (พนักงาน By User × รายชั่วโมง) */}
-        {settings.widgets.matrixTable && (
-          <MatrixTable
-            matrixRows={matrixRows}
-            activeHours={activeHours}
-            selectedUser={filters.byUser}
-            onSelectUser={(u) => setFilters({ ...filters, byUser: u })}
-            onCellClick={(user, hour) => {
-              setFilters({ ...filters, byUser: user });
-              setSelectedHour(hour);
-            }}
-          />
-        )}
-
-        {/* 7. Raw Data Ledger Table */}
-        {settings.widgets.rawDataTable && (
-          <RawDataTable records={filteredRecords} />
-        )}
-      </main>
+          {/* 8. Raw Data Ledger Table */}
+          {settings.widgets.rawDataTable && (
+            <div id="section-raw-data" className="w-full scroll-mt-20">
+              <RawDataTable records={filteredRecords} />
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* Live Excel Upload Modal */}
       <UploadModal

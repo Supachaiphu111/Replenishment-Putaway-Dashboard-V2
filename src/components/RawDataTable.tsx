@@ -57,8 +57,8 @@ export const RawDataTable: React.FC<RawDataTableProps> = ({ records }) => {
     <div className="glass-panel glass-specular rounded-2xl p-5 transition-all">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-500">
+          <div className="flex items-center gap-2.5">
+            <div className="liquid-icon liquid-icon-cyan w-9 h-9 shrink-0">
               <ListFilter className="w-4 h-4" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">

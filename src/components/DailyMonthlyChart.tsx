@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CalendarDays, TrendingUp, Sparkles, Sun, Moon, CheckCircle2, Layers } from 'lucide-react';
+import { CalendarDays, Sun, Moon, CheckCircle2, Sparkles, Layers } from 'lucide-react';
 import { RP20Record, ShiftFilter } from '../types';
 import { isMorningShift, isNightShift } from '../utils/sampleData';
 
@@ -45,7 +45,7 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
     });
   }, [records, selectedTasks, selectedStatus, shiftFilter]);
 
-  // Group records by Date (Daily)
+  // Group records by Date (Daily) - Pure bar aggregation (No trendline)
   const dailyData = useMemo(() => {
     const map: Record<string, { count: number; morning: number; night: number }> = {};
 
@@ -61,32 +61,9 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
       }
     });
 
-    // Sort dates ascending for trend line progression
     const sortedDates = Object.keys(map).sort();
 
-    // Linear regression for trendline
-    const n = sortedDates.length;
-    let trendValues: number[] = [];
-    if (n > 1) {
-      let sumX = 0;
-      let sumY = 0;
-      let sumXY = 0;
-      let sumXX = 0;
-      sortedDates.forEach((d, i) => {
-        const y = map[d].count;
-        sumX += i;
-        sumY += y;
-        sumXY += i * y;
-        sumXX += i * i;
-      });
-      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
-      const intercept = (sumY - slope * sumX) / n;
-      trendValues = sortedDates.map((_, i) => Math.max(0, Math.round(intercept + slope * i)));
-    } else {
-      trendValues = sortedDates.map((d) => map[d].count);
-    }
-
-    return sortedDates.map((date, idx) => {
+    return sortedDates.map((date) => {
       const parts = date.split('-');
       const day = parts[2] || date;
       const month = parts[1] || '';
@@ -99,12 +76,11 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
         count: map[date].count,
         morning: map[date].morning,
         night: map[date].night,
-        trend: trendValues[idx],
       };
     });
   }, [filteredDataset]);
 
-  // Group records by Month (Monthly)
+  // Group records by Month (Monthly) - Pure bar aggregation (No trendline)
   const monthlyData = useMemo(() => {
     const map: Record<string, { count: number; morning: number; night: number }> = {};
 
@@ -123,28 +99,6 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
 
     const sortedMonths = Object.keys(map).sort();
 
-    // Linear regression for trendline
-    const n = sortedMonths.length;
-    let trendValues: number[] = [];
-    if (n > 1) {
-      let sumX = 0;
-      let sumY = 0;
-      let sumXY = 0;
-      let sumXX = 0;
-      sortedMonths.forEach((m, i) => {
-        const y = map[m].count;
-        sumX += i;
-        sumY += y;
-        sumXY += i * y;
-        sumXX += i * i;
-      });
-      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
-      const intercept = (sumY - slope * sumX) / n;
-      trendValues = sortedMonths.map((_, i) => Math.max(0, Math.round(intercept + slope * i)));
-    } else {
-      trendValues = sortedMonths.map((m) => map[m].count);
-    }
-
     const monthNamesThai = [
       '',
       'ม.ค.',
@@ -161,7 +115,7 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
       'ธ.ค.',
     ];
 
-    return sortedMonths.map((monthStr, idx) => {
+    return sortedMonths.map((monthStr) => {
       const parts = monthStr.split('-');
       const monthNum = parseInt(parts[1], 10);
       const year = parts[0];
@@ -174,18 +128,14 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
         count: map[monthStr].count,
         morning: map[monthStr].morning,
         night: map[monthStr].night,
-        trend: trendValues[idx],
       };
     });
   }, [filteredDataset]);
 
   const activeDataset = viewMode === 'daily' ? dailyData : monthlyData;
 
-  // Max value for y-axis
-  const maxVal = Math.max(
-    1,
-    ...activeDataset.flatMap((d) => [d.count, d.trend])
-  );
+  // Max value for y-axis (pure bar count)
+  const maxVal = Math.max(1, ...activeDataset.map((d) => d.count));
 
   // SVG Chart Layout - Compact & responsive ("ขนาดเล็กพอดี")
   const chartHeight = 210;
@@ -196,16 +146,10 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
   const totalWidth = Math.max(680, activeDataset.length * stepX);
   const barWidth = Math.min(26, stepX - 14);
 
-  // Trendline SVG path
-  const trendLinePoints = activeDataset.map((item, idx) => {
-    const x = idx * stepX + stepX / 2;
-    const y = paddingTop + availableHeight - (item.trend / maxVal) * availableHeight;
-    return `${x},${y}`;
-  });
-  const trendPathD = trendLinePoints.length > 1 ? `M ${trendLinePoints.join(' L ')}` : '';
-
   // Summary Metrics
   const totalCompleted = activeDataset.reduce((sum, d) => sum + d.count, 0);
+  const totalMorning = activeDataset.reduce((sum, d) => sum + d.morning, 0);
+  const totalNight = activeDataset.reduce((sum, d) => sum + d.night, 0);
   const avgPeriod = activeDataset.length > 0 ? Math.round(totalCompleted / activeDataset.length) : 0;
   const peakItem = [...activeDataset].sort((a, b) => b.count - a.count)[0];
 
@@ -226,12 +170,12 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
   };
 
   return (
-    <div className="glass-panel glass-specular rounded-2xl p-4 sm:p-5 transition-all">
+    <div className="glass-panel glass-specular rounded-2xl p-4 sm:p-5 transition-all space-y-4">
       {/* Header and Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10 dark:border-white/5">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-500">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="liquid-icon liquid-icon-blue w-9 h-9">
               <CalendarDays className="w-4 h-4" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -241,25 +185,25 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
               </span>
             </h3>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
-            <span>แสดงข้อมูลทุกหัวข้องานที่เลือกแบบ Real-time</span>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+            <span>แสดงข้อมูลตามหัวข้องานและสถานะที่เลือกแบบ Real-time</span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span className="font-semibold text-cyan-600 dark:text-cyan-400">
               {selectedTasks.length === 0 ? 'ทุกหัวข้องาน' : `${selectedTasks.length} หัวข้องานที่เลือก`}
             </span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
-            <span>พร้อมเส้นแนวโน้ม (Linear Trendline)</span>
+            <span>คลิกแท่งเพื่อเจาะลึกเฉพาะวัน</span>
           </p>
         </div>
 
-        {/* View Mode Toggle */}
+        {/* View Mode Toggle with Liquid Glass Aesthetics */}
         <div className="flex items-center gap-2 self-start sm:self-center">
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/90 p-0.5 rounded-xl border border-slate-200 dark:border-white/10 text-xs">
+          <div className="flex items-center bg-slate-100/90 dark:bg-slate-900/90 p-1 rounded-xl border border-slate-200/80 dark:border-white/10 text-xs shadow-inner">
             <button
               onClick={() => setViewMode('daily')}
               className={`px-3 py-1.5 font-semibold rounded-lg transition-all cursor-pointer ${
                 viewMode === 'daily'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25 font-bold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -269,7 +213,7 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
               onClick={() => setViewMode('monthly')}
               className={`px-3 py-1.5 font-semibold rounded-lg transition-all cursor-pointer ${
                 viewMode === 'monthly'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25 font-bold'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -279,44 +223,50 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
         </div>
       </div>
 
-      {/* Quick Summary Pill Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3">
-        <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-white/5">
-          <div className="text-[10px] text-slate-400">ยอดรวมตามตัวกรอง</div>
-          <div className="text-base font-extrabold font-mono tabular-nums text-slate-900 dark:text-white">
+      {/* Quick Summary Strip (Crystalline Liquid Pods) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/80 dark:border-white/10 shadow-xs">
+          <div className="text-[10px] text-slate-400 font-medium">ยอดรวมตามตัวกรอง</div>
+          <div className="text-lg sm:text-xl font-extrabold font-mono tabular-nums text-slate-900 dark:text-white mt-0.5">
             {totalCompleted.toLocaleString()} <span className="text-xs font-normal text-slate-400">งาน</span>
           </div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-white/5">
-          <div className="text-[10px] text-slate-400">ค่าเฉลี่ยต่อ{viewMode === 'daily' ? 'วัน' : 'เดือน'}</div>
-          <div className="text-base font-extrabold font-mono tabular-nums text-cyan-600 dark:text-cyan-400">
+        <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 shadow-xs">
+          <div className="text-[10px] text-cyan-700 dark:text-cyan-300 font-medium">
+            ค่าเฉลี่ยต่อ{viewMode === 'daily' ? 'วัน' : 'เดือน'}
+          </div>
+          <div className="text-lg sm:text-xl font-extrabold font-mono tabular-nums text-cyan-600 dark:text-cyan-400 mt-0.5">
             {avgPeriod.toLocaleString()} <span className="text-xs font-normal text-slate-400">งาน</span>
           </div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-white/5">
-          <div className="text-[10px] text-slate-400">สูงสุด ({peakItem?.label || '-'})</div>
-          <div className="text-base font-extrabold font-mono tabular-nums text-amber-500">
+        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 shadow-xs">
+          <div className="text-[10px] text-amber-700 dark:text-amber-300 font-medium">
+            ยอดสูงสุด ({peakItem?.label || '-'})
+          </div>
+          <div className="text-lg sm:text-xl font-extrabold font-mono tabular-nums text-amber-600 dark:text-amber-400 mt-0.5">
             {peakItem?.count.toLocaleString() || 0} <span className="text-xs font-normal text-slate-400">งาน</span>
           </div>
         </div>
 
-        <div className="p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-white/5 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] text-slate-400 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-500" />
-              <span>เส้นแนวโน้ม</span>
-            </div>
-            <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
-              Linear Trendline
-            </div>
+        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-xs">
+          <div className="text-[10px] text-indigo-700 dark:text-indigo-300 font-medium flex items-center justify-between">
+            <span>สัดส่วนกะ (เช้า / ดึก)</span>
+            <span className="text-[9px] font-mono">05-17 | 18-04</span>
           </div>
-          <div className="w-8 h-1 bg-emerald-500 rounded-full" />
+          <div className="text-xs font-bold font-mono text-slate-800 dark:text-slate-200 mt-1 flex items-center justify-between">
+            <span className="text-amber-500 flex items-center gap-1">
+              <Sun className="w-3 h-3" /> {totalMorning.toLocaleString()}
+            </span>
+            <span className="text-indigo-400 flex items-center gap-1">
+              <Moon className="w-3 h-3" /> {totalNight.toLocaleString()}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* SVG Bar Chart with Trendline */}
+      {/* SVG Bar Chart without Trendline ("เอาเส้นแนวโน้มออก") */}
       <div className="relative w-full overflow-x-auto pb-1">
         <div className="min-w-[650px] sm:min-w-full">
           <svg
@@ -326,19 +276,16 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
             preserveAspectRatio="none"
           >
             <defs>
-              <linearGradient id="periodBarGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.4" />
+              {/* Normal Bar Gradient */}
+              <linearGradient id="periodBarGradientClean" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.45" />
               </linearGradient>
 
-              <linearGradient id="periodSelectedGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.95" />
-                <stop offset="100%" stopColor="#0284c7" stopOpacity="0.6" />
-              </linearGradient>
-
-              <linearGradient id="trendGlowGradient" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.8" />
+              {/* Selected Bar Gradient */}
+              <linearGradient id="periodSelectedGradientClean" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#06b6d4" stopOpacity="1" />
+                <stop offset="100%" stopColor="#0284c7" stopOpacity="0.65" />
               </linearGradient>
             </defs>
 
@@ -369,7 +316,7 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
               );
             })}
 
-            {/* Main Bars */}
+            {/* Main Pure Bars */}
             {activeDataset.map((item, idx) => {
               const x = idx * stepX + (stepX - barWidth) / 2;
               const barHeight = maxVal > 0 ? (item.count / maxVal) * availableHeight : 0;
@@ -410,17 +357,17 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
                     />
                   )}
 
-                  {/* Bar */}
+                  {/* Liquid Glass Bar */}
                   <rect
                     x={x}
                     y={y}
                     width={barWidth}
                     height={Math.max(2, barHeight)}
                     rx={4}
-                    fill={isSelected ? 'url(#periodSelectedGradient)' : 'url(#periodBarGradient)'}
+                    fill={isSelected ? 'url(#periodSelectedGradientClean)' : 'url(#periodBarGradientClean)'}
                     className={`transition-all duration-300 ${
                       isSelected
-                        ? 'stroke-2 stroke-cyan-300'
+                        ? 'stroke-2 stroke-cyan-300 shadow-lg'
                         : isHovered
                         ? 'stroke-1 stroke-cyan-300'
                         : ''
@@ -463,61 +410,21 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
                 </g>
               );
             })}
-
-            {/* Linear Trendline Overlay */}
-            {trendPathD && (
-              <g>
-                <path
-                  d={trendPathD}
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="2.5"
-                  strokeDasharray="4 3"
-                  strokeLinecap="round"
-                  className="filter drop-shadow-[0_2px_4px_rgba(16,185,129,0.3)] pointer-events-none"
-                />
-
-                {/* Trend dots */}
-                {activeDataset.map((item, idx) => {
-                  const cx = idx * stepX + stepX / 2;
-                  const cy = paddingTop + availableHeight - (item.trend / maxVal) * availableHeight;
-                  return (
-                    <circle
-                      key={`dot-${item.key}`}
-                      cx={cx}
-                      cy={cy}
-                      r="2.5"
-                      className="fill-emerald-400 stroke-white dark:stroke-slate-900 pointer-events-none"
-                      strokeWidth="1.5"
-                    />
-                  );
-                })}
-              </g>
-            )}
           </svg>
         </div>
       </div>
 
-      {/* Legend & Hover Info */}
+      {/* Legend & Hover Info (Clean without Trendline) */}
       <div className="flex flex-wrap items-center justify-between text-xs pt-1 border-t border-white/10 dark:border-white/5 gap-2">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-blue-500 shrink-0" />
-            <span className="text-slate-600 dark:text-slate-300 font-medium">
-              ยอดงานเสร็จสิ้น ({selectedStatus === 'ALL' ? 'ทุกสถานะ' : selectedStatus})
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-0.5 bg-emerald-500 stroke-dasharray-4 rounded shrink-0" />
-            <span className="text-slate-600 dark:text-slate-300 font-medium">
-              เส้นแนวโน้ม (Linear Trendline)
-            </span>
-          </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded bg-blue-500 shrink-0" />
+          <span className="text-slate-600 dark:text-slate-300 font-medium">
+            ยอดงานเสร็จสิ้น ({selectedStatus === 'ALL' ? 'ทุกสถานะ' : selectedStatus})
+          </span>
         </div>
 
         {hoveredIndex !== null && activeDataset[hoveredIndex] && (
-          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-white/10">
+          <div className="flex items-center gap-3 font-mono text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100/90 dark:bg-slate-900/90 px-3 py-1 rounded-xl border border-slate-200/80 dark:border-white/10 shadow-xs">
             <span>
               <strong>{activeDataset[hoveredIndex].label}</strong>: {activeDataset[hoveredIndex].count.toLocaleString()} งาน
             </span>
@@ -526,9 +433,6 @@ export const DailyMonthlyChart: React.FC<DailyMonthlyChartProps> = ({
             </span>
             <span className="text-indigo-400 flex items-center gap-1">
               <Moon className="w-3 h-3" /> ดึก: {activeDataset[hoveredIndex].night}
-            </span>
-            <span className="text-emerald-500 font-bold">
-              แนวโน้ม: {activeDataset[hoveredIndex].trend}
             </span>
           </div>
         )}

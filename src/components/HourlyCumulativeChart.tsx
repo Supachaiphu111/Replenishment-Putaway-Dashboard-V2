@@ -89,8 +89,8 @@ export const HourlyCumulativeChart: React.FC<HourlyCumulativeChartProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="liquid-icon liquid-icon-emerald w-9 h-9 shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">

@@ -97,7 +97,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 dark:border-white/5">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-500">
+            <div className="liquid-icon liquid-icon-cyan w-10 h-10 shrink-0">
               <Upload className="w-5 h-5" />
             </div>
             <div>

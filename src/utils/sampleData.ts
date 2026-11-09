@@ -58,6 +58,20 @@ export function isWrongTypeLabel(ilpn?: string): boolean {
 }
 
 /**
+ * Checks if label is an audited child iLPN for duplicate detection:
+ * Must start with 2115, and explicitly excludes labels starting with 125.
+ * "ลาเบลซ้ำกันมากกว่า1 ครั้ง ให้ดึงที่ขึ้นตันด้วย 2115 ตัดที่ขึ้น125 ออก"
+ */
+export function isDuplicateAuditLabel(ilpn?: string): boolean {
+  const str = String(ilpn || '').trim();
+  if (!str || str === '-' || str.toLowerCase() === 'null') return false;
+  // Explicitly cut out/exclude labels starting with 125
+  if (str.startsWith('125')) return false;
+  // Retrieve/include only child labels starting with 2115
+  return str.startsWith('2115');
+}
+
+/**
  * Generates realistic RP20 task records with Task No., iLPN, across multiple dates/months
  */
 export function generateSampleRP20Data(): RP20Record[] {
@@ -179,8 +193,12 @@ export function generateSampleRP20Data(): RP20Record[] {
         }
       } else {
         taskNo = `TSK-${taskNoCounter++}`;
-        // Standard non-cherry iLPN
-        ilpn = `LPN${Math.floor(10000000 + Math.random() * 90000000)}`;
+        // Standard non-cherry iLPN: mix of 125* pallet labels and LPN* barcodes
+        if (Math.random() < 0.35) {
+          ilpn = `125${Math.floor(10000000 + Math.random() * 90000000)}`;
+        } else {
+          ilpn = `LPN${Math.floor(10000000 + Math.random() * 90000000)}`;
+        }
       }
 
       records.push({

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Download, Sliders, Moon, Sun, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Upload, Download, Sliders, Moon, Sun, RefreshCw, FileSpreadsheet, PanelLeft } from 'lucide-react';
 import { RP20Record } from '../types';
 import { downloadSampleRP20Excel } from '../utils/excelParser';
 
@@ -12,6 +12,7 @@ interface HeaderProps {
   currentRecords: RP20Record[];
   totalRecordsCount: number;
   fileName?: string;
+  onToggleSidebar?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,23 +24,32 @@ export const Header: React.FC<HeaderProps> = ({
   currentRecords,
   totalRecordsCount,
   fileName,
+  onToggleSidebar,
 }) => {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-white/10 dark:border-white/10 bg-white/70 dark:bg-slate-950/75 backdrop-blur-xl transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Brand Zone: 1-line display wordmark */}
+    <header className="sticky top-0 z-30 w-full border-b border-white/10 dark:border-white/10 bg-white/70 dark:bg-slate-950/75 backdrop-blur-xl transition-colors">
+      <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        {/* Brand Zone: Sidebar Toggle Button + 1-line display wordmark */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-emerald-400 p-[1.5px] shadow-lg shadow-cyan-500/20">
-            <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[10px] flex items-center justify-center">
-              <FileSpreadsheet className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-            </div>
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-white/10 transition-all cursor-pointer shadow-xs"
+              title="เปิด/ปิดแถบเมนู (Sidebar Navigation)"
+            >
+              <PanelLeft className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+            </button>
+          )}
+
+          <div className="liquid-icon liquid-icon-cyan w-10 h-10 shadow-lg shadow-cyan-500/20">
+            <FileSpreadsheet className="w-5 h-5 text-cyan-600 dark:text-cyan-300" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
                 RP20 Liquid Analytics
               </span>
-              <span className="text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20">
+              <span className="text-[11px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border border-cyan-500/30">
                 Hourly Hub
               </span>
             </div>

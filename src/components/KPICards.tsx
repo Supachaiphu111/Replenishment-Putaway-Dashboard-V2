@@ -25,112 +25,112 @@ export const KPICards: React.FC<KPICardsProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
       {/* 1. Completed Tasks */}
-      <div className="glass-panel glass-specular rounded-2xl p-4 relative group hover:border-emerald-500/30 transition-all">
+      <div className="glass-panel glass-specular p-4 relative group hover:border-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             {statusLabel === 'ALL' || statusLabel.toLowerCase() === 'complete'
               ? 'ยอดงานเสร็จสิ้น (Completed)'
-              : `ยอดงานสถานะ (${statusLabel})`}
+              : `ยอดงาน (${statusLabel})`}
           </span>
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500">
+          <div className="liquid-icon liquid-icon-emerald w-9 h-9 shrink-0">
             <CheckCircle2 className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 mt-1">
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono tabular-nums text-slate-900 dark:text-white">
             {completedCount.toLocaleString()}
           </span>
-          <span className="text-xs text-slate-400">tasks</span>
+          <span className="text-xs text-slate-400 font-mono">งาน</span>
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-          <span>จากทั้งหมด {totalCount.toLocaleString()} งาน</span>
+        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+          <span>จาก {totalCount.toLocaleString()} รายการ</span>
           <span>·</span>
-          <span className="text-emerald-500 font-semibold">{completionRate.toFixed(1)}%</span>
+          <span className="text-emerald-500 font-bold">{completionRate.toFixed(1)}%</span>
         </div>
       </div>
 
       {/* 2. Peak Productive Hour */}
-      <div className="glass-panel glass-specular rounded-2xl p-4 relative group hover:border-amber-500/30 transition-all">
+      <div className="glass-panel glass-specular p-4 relative group hover:border-amber-500/40 hover:-translate-y-0.5 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             ช่วงเวลาพีคสุด (Peak Hour)
           </span>
-          <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+          <div className="liquid-icon liquid-icon-amber w-9 h-9 shrink-0">
             <Flame className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono tabular-nums text-amber-500">
+        <div className="flex items-baseline gap-2 mt-1">
+          <span className="text-xl sm:text-2xl font-extrabold tracking-tight font-mono tabular-nums text-amber-500 truncate">
             {peakHourLabel}
           </span>
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-          <span className="font-semibold text-slate-700 dark:text-slate-200">{peakHourCount.toLocaleString()} งาน</span>
+        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+          <span className="font-bold text-amber-600 dark:text-amber-400">{peakHourCount.toLocaleString()} งาน</span>
           <span>·</span>
-          <span>ช่วงกำลังการผลิตสูงสุด</span>
+          <span>กำลังผลิตสูงสุด</span>
         </div>
       </div>
 
       {/* 3. Active Users */}
-      <div className="glass-panel glass-specular rounded-2xl p-4 relative group hover:border-cyan-500/30 transition-all">
+      <div className="glass-panel glass-specular p-4 relative group hover:border-cyan-500/40 hover:-translate-y-0.5 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            พนักงานที่ปฏิบัติงาน (Active Users)
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            พนักงานปฏิบัติงาน (Users)
           </span>
-          <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-500">
+          <div className="liquid-icon liquid-icon-cyan w-9 h-9 shrink-0">
             <Users className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 mt-1">
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono tabular-nums text-slate-900 dark:text-white">
             {activeUsersCount}
           </span>
-          <span className="text-xs text-slate-400">คน</span>
+          <span className="text-xs text-slate-400 font-mono">คน</span>
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
           <span>เฉลี่ย {(completedCount / (activeUsersCount || 1)).toFixed(1)} งาน/คน</span>
         </div>
       </div>
 
       {/* 4. Average Hourly Speed */}
-      <div className="glass-panel glass-specular rounded-2xl p-4 relative group hover:border-indigo-500/30 transition-all">
+      <div className="glass-panel glass-specular p-4 relative group hover:border-indigo-500/40 hover:-translate-y-0.5 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            เฉลี่ยต่อชั่วโมง (Avg Tasks/Hr)
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            เฉลี่ยต่อชั่วโมง (Tasks/Hr)
           </span>
-          <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+          <div className="liquid-icon liquid-icon-indigo w-9 h-9 shrink-0">
             <Gauge className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 mt-1">
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono tabular-nums text-slate-900 dark:text-white">
             {avgPerHour.toFixed(1)}
           </span>
-          <span className="text-xs text-slate-400">งาน/ชม.</span>
+          <span className="text-xs text-slate-400 font-mono">งาน/ชม.</span>
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-          <span>คิดจากชั่วโมงที่มีการบันทึก</span>
+        <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+          <span>ชั่วโมงที่มีการปิดงาน</span>
         </div>
       </div>
 
       {/* 5. Completion Efficiency */}
-      <div className="glass-panel glass-specular rounded-2xl p-4 relative group hover:border-violet-500/30 transition-all">
+      <div className="glass-panel glass-specular p-4 relative group hover:border-violet-500/40 hover:-translate-y-0.5 transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            อัตราเสร็จสมบูรณ์ (Completion %)
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            อัตราเสร็จสิ้น (Success %)
           </span>
-          <div className="p-2 rounded-xl bg-violet-500/10 text-violet-500">
+          <div className="liquid-icon liquid-icon-violet w-9 h-9 shrink-0">
             <TrendingUp className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-2 mt-1">
           <span className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono tabular-nums text-emerald-500 dark:text-emerald-400">
             {completionRate.toFixed(1)}%
           </span>
         </div>
-        <div className="mt-2 w-full bg-slate-200 dark:bg-slate-700/60 h-1.5 rounded-full overflow-hidden">
+        <div className="mt-2.5 w-full bg-slate-200 dark:bg-slate-800/80 h-1.5 rounded-full overflow-hidden p-[1px] border border-white/5">
           <div
-            className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500"
+            className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-full rounded-full transition-all duration-500 shadow-sm shadow-emerald-500/30"
             style={{ width: `${Math.min(100, completionRate)}%` }}
           />
         </div>

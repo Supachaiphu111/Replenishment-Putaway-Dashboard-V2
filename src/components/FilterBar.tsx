@@ -134,12 +134,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     <div className="w-full glass-panel glass-specular rounded-2xl p-4 sm:p-5 transition-all space-y-4">
       {/* 1. Header Bar: Title, Counters, Shift Toggle, Reset */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-white/10 dark:border-white/5">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+        <div className="flex items-center gap-2.5">
+          <div className="liquid-icon liquid-icon-cyan w-9 h-9 shrink-0">
             <Filter className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-100">
               ตัวกรองข้อมูล RP20 (Auto-Filtered Parameters)
             </span>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -200,11 +200,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
       </div>
 
-      {/* 2. NEW: TASK DESCRIPTION SELECTION TABS (แท็บเลือกหัวข้องาน - Multi-select Segmented Tabs) */}
+      {/* 2. TASK DESCRIPTION SELECTION TABS */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
           <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center flex-wrap gap-2">
-            <div className="p-1 rounded-md bg-indigo-500/10 text-indigo-500">
+            <div className="liquid-icon liquid-icon-indigo w-7 h-7 shrink-0">
               <Clock className="w-3.5 h-3.5" />
             </div>
             <span>แท็บเลือกหัวข้องาน / Item Description:</span>
@@ -314,7 +314,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       {/* 3. STATUS SELECTION TABS BAR (แท็บเลือกสถานะงาน) */}
       <div>
         <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
-          <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-500">
+          <div className="liquid-icon liquid-icon-emerald w-7 h-7 shrink-0">
             <CheckCircle2 className="w-3.5 h-3.5" />
           </div>
           <span>แท็บเลือกสถานะงาน (Status Tabs):</span>

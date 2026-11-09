@@ -36,8 +36,8 @@ export const TaskDistributionChart: React.FC<TaskDistributionProps> = ({
     <div className="glass-panel glass-specular rounded-2xl p-5 transition-all">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-violet-500/10 text-violet-500">
+          <div className="flex items-center gap-2.5">
+            <div className="liquid-icon liquid-icon-violet w-9 h-9 shrink-0">
               <PieChart className="w-4 h-4" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100">

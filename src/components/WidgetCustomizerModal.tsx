@@ -72,8 +72,8 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
     },
     {
       id: 'dailyMonthlyChart',
-      label: 'กราฟแท่งสรุปผลงานรายวันและรายเดือน พร้อมเส้นแนวโน้ม',
-      desc: 'แสดงยอดงานรายวัน/รายเดือน เปรียบเทียบกะเช้า-ดึก พร้อมเส้นแนวโน้ม Trendline',
+      label: 'กราฟแท่งสรุปผลงานรายวันและรายเดือน (Daily & Monthly)',
+      desc: 'แสดงยอดงานรายวัน/รายเดือน เปรียบเทียบกะเช้า-ดึก สรุปตัวเลขรายวันและรายเดือน',
     },
     {
       id: 'cherryPickWidget',
@@ -113,7 +113,7 @@ export const WidgetCustomizerModal: React.FC<WidgetCustomizerModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 dark:border-white/5">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+            <div className="liquid-icon liquid-icon-indigo w-10 h-10 shrink-0">
               <Sliders className="w-5 h-5" />
             </div>
             <div>

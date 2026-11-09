@@ -18,7 +18,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { RP20Record, DuplicateIlpnEntry, UserDuplicateIlpnStat, WrongTypeLabelRecord, UserWrongLabelStat } from '../types';
-import { isWrongTypeLabel } from '../utils/sampleData';
+import { isWrongTypeLabel, isDuplicateAuditLabel } from '../utils/sampleData';
 
 interface IlpnAuditWidgetProps {
   records: RP20Record[];
@@ -31,15 +31,16 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedUsers, setExpandedUsers] = useState<Record<string, boolean>>({});
 
-  // 1. Audit Duplicate Child iLPNs (iLPN ที่ถูกสแกน/ใช้มากกว่า 1 ครั้ง)
+  // 1. Audit Duplicate Child iLPNs:
+  // "ลาเบลซ้ำกันมากกว่า1 ครั้ง ให้ดึงที่ขึ้นตันด้วย 2115 ตัดที่ขึ้น125 ออก"
   const duplicateAudit = useMemo(() => {
     // Map iLPN -> Array of records
     const ilpnMap = new Map<string, RP20Record[]>();
 
     records.forEach((r) => {
       const ilpn = String(r.ilpn || '').trim();
-      // Only audit valid child label strings (length >= 5 and not empty)
-      if (!ilpn || ilpn === '-' || ilpn.toLowerCase() === 'null') return;
+      // Enforce: Must start with 2115, and exclude 125*
+      if (!isDuplicateAuditLabel(ilpn)) return;
 
       if (!ilpnMap.has(ilpn)) {
         ilpnMap.set(ilpn, []);
@@ -243,7 +244,7 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
     let csvContent = 'data:text/csv;charset=utf-8,';
 
     if (activeTab === 'duplicate') {
-      csvContent += 'User,iLPN (Child Label),Times Used,Task No.,Completion Time,Date,Task Description,Task Status\r\n';
+      csvContent += 'User,iLPN (Child Label 2115*),Times Used,Task No.,Completion Time,Date,Task Description,Task Status\r\n';
       duplicateAudit.duplicateList.forEach((entry) => {
         entry.tasks.forEach((t) => {
           csvContent += `"${t.byUser}","${entry.ilpn}",${entry.count},"${t.taskNo || ''}","${t.completionTime}","${t.date}","${t.taskDescription}","${t.taskStatus}"\r\n`;
@@ -261,7 +262,7 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
     link.setAttribute('href', encodedUri);
     link.setAttribute(
       'download',
-      `Audit_${activeTab === 'duplicate' ? 'Duplicate_iLPN' : 'Wrong_Type_2114'}_${new Date().toISOString().slice(0, 10)}.csv`
+      `Audit_${activeTab === 'duplicate' ? 'Duplicate_iLPN_2115' : 'Wrong_Type_2114'}_${new Date().toISOString().slice(0, 10)}.csv`
     );
     document.body.appendChild(link);
     link.click();
@@ -273,16 +274,16 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
       {/* 1. Header with Badge & Export */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10 dark:border-white/5">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+          <div className="flex items-center gap-2.5">
+            <div className="liquid-icon liquid-icon-amber w-9 h-9 shrink-0">
               <AlertTriangle className="w-4 h-4" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <span>ตรวจสอบความถูกต้อง iLPN & ตรวจจับข้อผิดพลาด (iLPN Audit)</span>
             </h3>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            ตรวจจับ <strong>User ที่ใช้ iLPN ลูกซ้ำมากกว่า 1 ครั้ง</strong> และ <strong>การสแกนลาเบลผิดประเภท (ขึ้นต้นด้วย 2114*)</strong>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            ตรวจจับ <strong>User ที่ใช้ iLPN ลูกซ้ำมากกว่า 1 ครั้ง (เฉพาะที่ขึ้นต้นด้วย 2115* ตัดรหัส 125* ออก)</strong> และ <strong>การสแกนลาเบลผิดประเภท (ขึ้นต้นด้วย 2114*)</strong>
           </p>
         </div>
 
@@ -291,7 +292,7 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
           <button
             onClick={handleExportCSV}
             className="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 transition-all flex items-center gap-1.5 cursor-pointer"
-            title="ส่งออกรายงานความผิดปกตินี้เป็นไฟล์ CSV"
+            title="ส่งออกรายงานความผิดปกตินี้เป็นไฟล์ CSV (เฉพาะ iLPN 2115*)"
           >
             <Download className="w-3.5 h-3.5 text-cyan-500" />
             <span>ดาวน์โหลดรายงาน CSV</span>
@@ -301,33 +302,37 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
 
       {/* 2. Top Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Card 1: Users with Duplicate iLPNs */}
+        {/* Card 1: Users with Duplicate iLPNs (2115*) */}
         <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-amber-700 dark:text-amber-300">
-            <span>User ที่ใช้ iLPN ซ้ำ</span>
-            <Users className="w-3.5 h-3.5" />
+            <span>User ที่ใช้ iLPN ซ้ำ (2115*)</span>
+            <div className="liquid-icon liquid-icon-amber w-7 h-7 shrink-0">
+              <Users className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-amber-600 dark:text-amber-400 mt-1">
             {duplicateAudit.totalUsersWithDuplicates.toLocaleString()}{' '}
             <span className="text-xs font-normal text-slate-400">คน</span>
           </div>
           <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-            สแกน iLPN ลูกลูกเดิม &gt; 1 ครั้ง
+            สแกน iLPN ลูก 2115* ซ้ำ &gt; 1 ครั้ง (ตัด 125* ออก)
           </div>
         </div>
 
-        {/* Card 2: Total Duplicate iLPN codes */}
+        {/* Card 2: Total Duplicate iLPN codes (2115*) */}
         <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/25 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-purple-700 dark:text-purple-300">
-            <span>iLPN ที่ถูกใช้ซ้ำทั้งหมด</span>
-            <Copy className="w-3.5 h-3.5" />
+            <span>iLPN 2115* ที่ถูกใช้ซ้ำ</span>
+            <div className="liquid-icon liquid-icon-purple w-7 h-7 shrink-0">
+              <Copy className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-purple-600 dark:text-purple-300 mt-1">
             {duplicateAudit.totalDuplicateIlpns.toLocaleString()}{' '}
             <span className="text-xs font-normal text-slate-400">รายการ</span>
           </div>
           <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-            พบซ้ำสูงสุด {duplicateAudit.maxDuplicateTimes} ครั้ง/iLPN
+            พบซ้ำสูงสุด {duplicateAudit.maxDuplicateTimes} ครั้ง (ไม่รวม 125*)
           </div>
         </div>
 
@@ -335,7 +340,9 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
         <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-rose-700 dark:text-rose-300">
             <span>ลาเบลผิดประเภท (2114*)</span>
-            <XCircle className="w-3.5 h-3.5" />
+            <div className="liquid-icon liquid-icon-rose w-7 h-7 shrink-0">
+              <XCircle className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-rose-600 dark:text-rose-400 mt-1">
             {wrongTypeAudit.totalWrongCount.toLocaleString()}{' '}
@@ -350,7 +357,9 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
         <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-indigo-700 dark:text-indigo-300">
             <span>User ที่สแกน 2114*</span>
-            <AlertCircle className="w-3.5 h-3.5" />
+            <div className="liquid-icon liquid-icon-indigo w-7 h-7 shrink-0">
+              <AlertCircle className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-indigo-600 dark:text-indigo-400 mt-1">
             {wrongTypeAudit.totalUsersWithWrong.toLocaleString()}{' '}
@@ -375,7 +384,7 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
             }`}
           >
             <Copy className="w-3.5 h-3.5" />
-            <span>User ที่ใช้ iLPN ซ้ำ (&gt; 1 ครั้ง)</span>
+            <span>User ที่ใช้ iLPN ซ้ำ (เฉพาะ 2115* | ตัด 125*)</span>
             <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-md bg-black/20 text-white font-bold ml-1">
               {duplicateAudit.totalUsersWithDuplicates}
             </span>
@@ -444,10 +453,10 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
             <div className="p-8 text-center rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
               <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
               <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                ไม่พบการใช้ iLPN ลูกซ้ำ
+                ไม่พบการใช้ iLPN ลูก (2115*) ซ้ำ
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                ทุก iLPN ถูกสแกนและใช้งานอย่างถูกต้องเพียง 1 ครั้งเท่านั้น
+                ทุกลาเบลลูกที่ขึ้นต้นด้วย 2115* ถูกสแกนและใช้งานอย่างถูกต้อง (ตัดรหัสที่ขึ้นต้น 125* ออกตามเงื่อนไขเรียบร้อยแล้ว)
               </p>
             </div>
           ) : subView === 'by-user' ? (
@@ -535,7 +544,7 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
                           <table className="w-full text-left text-[11px] font-mono tabular-nums border-collapse">
                             <thead className="bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 text-[10px]">
                               <tr>
-                                <th className="py-1.5 px-2.5">iLPN ลูก</th>
+                                <th className="py-1.5 px-2.5">iLPN ลูก (2115*)</th>
                                 <th className="py-1.5 px-2.5 text-center">จำนวนครั้งที่ใช้</th>
                                 <th className="py-1.5 px-2.5">รหัสงาน Task No. ที่ใช้ซ้ำ</th>
                                 <th className="py-1.5 px-2.5">เวลาที่อัปเดต</th>
@@ -579,7 +588,7 @@ export const IlpnAuditWidget: React.FC<IlpnAuditWidgetProps> = ({ records, onSel
               <table className="w-full text-left text-xs font-mono tabular-nums border-collapse">
                 <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-10 text-slate-600 dark:text-slate-400">
                   <tr>
-                    <th className="py-2 px-3">iLPN ลูก (ที่ใช้ซ้ำ)</th>
+                    <th className="py-2 px-3">iLPN ลูก 2115* (ที่ใช้ซ้ำ)</th>
                     <th className="py-2 px-3 text-center">จำนวนครั้งที่ใช้</th>
                     <th className="py-2 px-3 font-sans">พนักงานที่ใช้ (Users)</th>
                     <th className="py-2 px-3">Task No. ที่เกี่ยวข้อง</th>

@@ -193,8 +193,8 @@ export const CherryPickAnalytics: React.FC<CherryPickAnalyticsProps> = ({
       {/* 1. Header with Title & UX Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10 dark:border-white/5">
         <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="liquid-icon liquid-icon-rose w-9 h-9 shrink-0">
               <Tag className="w-4 h-4" />
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -204,7 +204,7 @@ export const CherryPickAnalytics: React.FC<CherryPickAnalyticsProps> = ({
               </span>
             </h3>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             นับรวม Prty 40 และ Prty 50 เข้าด้วยกัน · ลาเบลแม่นับจาก <strong>Task No.</strong> · ลาเบลลูกนับจาก <strong>iLPN (ขึ้นต้นด้วย 2115*)</strong>
           </p>
         </div>
@@ -242,7 +242,9 @@ export const CherryPickAnalytics: React.FC<CherryPickAnalyticsProps> = ({
         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-500/15 via-purple-500/5 to-transparent border border-purple-500/30 dark:border-purple-500/20 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-purple-700 dark:text-purple-300">
             <span>ลาเบลแม่รวม (Task No.)</span>
-            <Layers className="w-3.5 h-3.5" />
+            <div className="liquid-icon liquid-icon-purple w-7 h-7 shrink-0">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-purple-600 dark:text-purple-300 mt-1">
             {combinedStats.uniqueParents.toLocaleString()}{' '}
@@ -257,7 +259,9 @@ export const CherryPickAnalytics: React.FC<CherryPickAnalyticsProps> = ({
         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-cyan-500/15 via-cyan-500/5 to-transparent border border-cyan-500/30 dark:border-cyan-500/20 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-cyan-700 dark:text-cyan-300">
             <span>ลาเบลลูกรวม (iLPN 2115*)</span>
-            <Tag className="w-3.5 h-3.5" />
+            <div className="liquid-icon liquid-icon-cyan w-7 h-7 shrink-0">
+              <Tag className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-cyan-600 dark:text-cyan-300 mt-1">
             {combinedStats.totalChild2115.toLocaleString()}{' '}
@@ -272,7 +276,9 @@ export const CherryPickAnalytics: React.FC<CherryPickAnalyticsProps> = ({
         <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent border border-emerald-500/30 dark:border-emerald-500/20 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-300">
             <span>อัตราส่วนรวม (ลูก/แม่)</span>
-            <ArrowUpDown className="w-3.5 h-3.5" />
+            <div className="liquid-icon liquid-icon-emerald w-7 h-7 shrink-0">
+              <ArrowUpDown className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums text-emerald-600 dark:text-emerald-300 mt-1">
             {combinedStats.ratio.toFixed(2)}{' '}
@@ -287,7 +293,9 @@ export const CherryPickAnalytics: React.FC<CherryPickAnalyticsProps> = ({
         <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 shadow-xs">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
             <span>ยอดรวมแยกตามกะ</span>
-            <span className="text-[10px] font-mono text-slate-400">Replenish Cherry</span>
+            <div className="liquid-icon liquid-icon-amber w-7 h-7 shrink-0">
+              <Sun className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div className="flex items-center justify-between text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-1.5">
             <span className="flex items-center gap-1 text-amber-500">
