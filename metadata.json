@@ -1,0 +1,6 @@
+{
+  "name": "RP20 Hourly Productivity Hub",
+  "description": "Real-time Liquid Glass analytics dashboard for RP20 Excel task reports, hourly completed metrics, workforce matrix, and cumulative productivity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
